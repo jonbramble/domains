@@ -37,10 +37,16 @@ import ij.process.ImageConverter;
 //import ij.process.ImageStatistics;
 //import ij.process.AutoThresholder;
 
+
+
+
 import java.io.File;
 import java.io.IOException;
 
 import loci.formats.FormatException;
+import loci.formats.ImageReader;
+import loci.formats.MetadataTools;
+import loci.formats.meta.IMetadata;
 import loci.plugins.BF;
 import loci.plugins.in.ImporterOptions;
 
@@ -60,9 +66,26 @@ public class Domains implements PlugIn {
     public String id;
     public String name;
     public String dir;      // set the default directory 
-    public Boolean abberation_correction = true;			// set to true if using di-8-anneps with 50% power
-    public Double max_area = 8000.0;			//set maximum for domain size in particle analysis
-    public Double min_area =2.0;			//set maximum for domain size in particle analysis
+    private boolean abberation_correction = false;			// set to true if using di-8-anneps with 50% power
+    private boolean process_domains = false;
+    private double max_area = 1000.0;			//set maximum for domain size in particle analysis
+    private double min_area =0.0;			//set maximum for domain size in particle analysis
+    
+    public void setMax_Area(double _max_area){
+    	max_area = _max_area;
+    }
+    
+    public void setMin_Area(double _min_area){
+    	min_area = _min_area;
+    }
+    
+    public void setAbberation_Correction(boolean _abberation_correction ){
+    	abberation_correction = _abberation_correction;
+    }
+    
+    public void setProcess_domains(boolean _process_domains ){
+    	process_domains = _process_domains;
+    }
     
     public void run(String arg) {
     	
@@ -79,6 +102,46 @@ public class Domains implements PlugIn {
   		new File(dir+"processed").mkdirs();
 
         ImporterOptions options;		// new set of importer options from bio-formats
+        /*
+        //Ext.setId(id);
+        //Ext.getSeriesCount(seriesCount);
+        
+        //IMetadata omexmlMetadata = MetadataTools.createOMEXMLMetadata();
+        ImageReader reader = new ImageReader();
+        //reader.setMetadataStore(omexmlMetadata);
+        //reader.
+        
+        int seriesCount = reader.getSeriesCount();
+        
+        for (int i=0; i<seriesCount; i++) {
+        	  reader.setSeries(i);
+        	  //String name = omexmlMetadata.getImageName(i); // this is the image name stored in the file
+        	  //String label = "Series " + (i + 1) + ": " + name;  // this is the label that you see in ImageJ
+        	  // now you can read the pixel data for this series...
+        	  //IJ.log(label);
+        	}
+        
+        try {
+			//reader.setId(id);
+		} catch (FormatException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+        
+        
+        IJ.log(String.valueOf(seriesCount));
+        
+        try {
+			reader.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		*/
         
         try{
          options = new ImporterOptions();  
@@ -88,8 +151,9 @@ public class Domains implements PlugIn {
          options.setStackFormat(ImporterOptions.VIEW_STANDARD);
          options.setStackOrder(ImporterOptions.ORDER_XYCZT);
          options.setOpenAllSeries(true);   //this opens all the files, because I couldn't found out how to make a selector on the series name
+         
             
-            ImagePlus[] imps = BF.openImagePlus(options);
+         ImagePlus[] imps = BF.openImagePlus(options);
             for (ImagePlus imp : imps) {
                 img_name = imp.getTitle();
               // only process the stacks
@@ -103,10 +167,14 @@ public class Domains implements PlugIn {
         catch(IOException exc) {
             IJ.error("Sorry, an error occurred: " + exc.getMessage());
         }
-        catch(FormatException exc) {
-            IJ.error("Sorry, a format error occurred: " + exc.getMessage());
-        }
-
+        //catch(FormatException exc) {
+         //   IJ.error("Sorry, a format error occurred: " + exc.getMessage());
+        //}
+        catch (FormatException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+          
     }
 
     private void ProcessImageStack(ImagePlus imp) {
@@ -126,11 +194,12 @@ public class Domains implements PlugIn {
         ave_save.setCalibration(cal); 
         cal = ave_img.getCalibration();
 
-        String ave_file_name = dir+"processed/" +ave_save.getTitle(); // save the files
+        String ave_file_name = dir+"processed/" +ave_save.getTitle()+".tif"; // save the files
         SaveImage(ave_save,ave_file_name);
 
-        ProcessProjections(ave_save);  // process the average images
-
+        if(process_domains==true){
+        	ProcessProjections(ave_save);  // process the average images
+        }
     }
 
     private void ProcessProjections(ImagePlus imp){
@@ -141,7 +210,7 @@ public class Domains implements PlugIn {
 		imp.getProcessor().medianFilter();
 		
         // save the thresholded files       
-        String threshold_file_name = dir+"processed/" +imp.getTitle()+"-th";
+        String threshold_file_name = dir+"processed/" +imp.getTitle()+"-th.tif";
         SaveImage(imp,threshold_file_name);
 
     	// remove abberations from images caused by high laser power
@@ -150,7 +219,7 @@ public class Domains implements PlugIn {
         	imp = corrected; 
     	}
  
-        String msk_file_name = dir+ "processed/" +imp.getTitle()+"-msk";
+        String msk_file_name = dir+ "processed/" +imp.getTitle()+"-msk.tif";
         SaveImage(imp,msk_file_name);
 
 		// perform the particle analysis on the domains
