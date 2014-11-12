@@ -71,6 +71,7 @@ public class Domains implements PlugIn {
     private static double max_circ = 1.0;
     
     private String experiment = "experiment";
+    private String batch;
     
     public void setMax_Area(double _max_area){
     	max_area = _max_area;
@@ -159,9 +160,7 @@ public class Domains implements PlugIn {
         ic.convertToGray8();
         ave_save.setCalibration(cal); 
         cal = ave_img.getCalibration();
-        
-        //move all this to saveImage util method
-       
+              
         SaveImage(ave_save,"stack");
 
         if(process_domains==true){
@@ -184,8 +183,7 @@ public class Domains implements PlugIn {
         	ImagePlus corrected = RemoveAbberation(imp);
         	imp = corrected; 
     	}
- 
-        
+    
         SaveImage(imp,"mask");
 
 		// perform the particle analysis on the domains
@@ -224,17 +222,32 @@ public class Domains implements PlugIn {
  			IJ.log("Analysed");
  		}
 
-   		// retrieve the outline image from the particleanalyser
+   		// retrieve the outline image from the particle analyser
         ImagePlus outlines_img= pa.getOutputImage(); 
 		//outlines_img.show();
 
 		// save processed file
         SaveImage(outlines_img,"outlines");
-
+        String[] name_batch = ExperimentName(outlines_img);
+        experiment = name_batch[0];
+        batch = name_batch[1];
+        
+        IJ.log("Experiment " + experiment + " " + batch);
 		IJ.log("Number of Domains found " + String.valueOf(rt.getCounter()));
+		
+		//int freeColumn = rt.getFreeColumn();
+		int numColumns = rt.getCounter();
+		IJ.log("Number of Columns " + String.valueOf(numColumns));
+		
+		for(int k=0;k<numColumns;k++){
+			rt.setValue("Experiment",k, experiment);
+			rt.setValue("Batch",k, batch);
+		}
 
 		String newTitle = FileName(outlines_img,"dat");
 		String analysis_file_name = dir+"processed/"+newTitle+".csv";
+		
+		//IJ.log(String.valueOf(rt.getLastColumn());
         
         // this block saves the analysis file as a csv file in the directory        
         try{
@@ -261,8 +274,17 @@ public class Domains implements PlugIn {
         tokens[1].replaceAll("^\\s+", "");		//this is making assumptions about the filename structure
         //String newTitle = String.join("-",tokens[1],tokens[2],type_suffix);//dump the first part
         String newTitle = tokens[1] + "-" + tokens[2] + "-" + type_suffix;//dump the first part
-        return newTitle;
-    	
+        return newTitle;  	
+    }
+    
+    private String[] ExperimentName(ImagePlus imp){
+    	String title = imp.getTitle();
+        String delims = "[-]";
+        String[] tokens = title.split(delims);
+        
+        tokens[1].replaceAll("^\\s+", "");
+        
+        return new String[]{tokens[1],tokens[2]};
     }
 
 }
