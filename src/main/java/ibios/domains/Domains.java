@@ -105,7 +105,7 @@ public class Domains implements PlugIn {
         id = dir + name;
         String img_name;
 
-  		new File(dir+"processed").mkdirs();
+        new File(dir+"processed").mkdirs();
   		
 
         ImporterOptions options;		// new set of importer options from bio-formats
@@ -187,7 +187,12 @@ public class Domains implements PlugIn {
         SaveImage(imp,"mask");
 
 		// perform the particle analysis on the domains
-        DomainAnalysis(imp);
+        try{
+        	DomainAnalysis(imp);
+        }
+        	catch(NullPointerException e ){
+        		e.printStackTrace();
+        	}
  
     }
 
