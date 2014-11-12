@@ -37,16 +37,13 @@ import ij.process.ImageConverter;
 //import ij.process.ImageStatistics;
 //import ij.process.AutoThresholder;
 
-
-
-
 import java.io.File;
 import java.io.IOException;
 
 import loci.formats.FormatException;
-import loci.formats.ImageReader;
-import loci.formats.MetadataTools;
-import loci.formats.meta.IMetadata;
+//import loci.formats.ImageReader;
+//import loci.formats.MetadataTools;
+//import loci.formats.meta.IMetadata;
 import loci.plugins.BF;
 import loci.plugins.in.ImporterOptions;
 
@@ -66,10 +63,14 @@ public class Domains implements PlugIn {
     public String id;
     public String name;
     public String dir;      // set the default directory 
-    private boolean abberation_correction = false;			// set to true if using di-8-anneps with 50% power
+    private boolean abberation_correction = false;
     private boolean process_domains = false;
     private double max_area = 1000.0;			//set maximum for domain size in particle analysis
-    private double min_area =0.0;			//set maximum for domain size in particle analysis
+    private double min_area = 0.0;			//set maximum for domain size in particle analysis
+    private static double min_circ = 0.01;
+    private static double max_circ = 1.0;
+    
+    private String experiment = "experiment";
     
     public void setMax_Area(double _max_area){
     	max_area = _max_area;
@@ -87,6 +88,10 @@ public class Domains implements PlugIn {
     	process_domains = _process_domains;
     }
     
+    public void setExperiment(String _experiment){
+    	experiment = _experiment;
+    }
+    
     public void run(String arg) {
     	
     	dir = OpenDialog.getDefaultDirectory();
@@ -100,48 +105,9 @@ public class Domains implements PlugIn {
         String img_name;
 
   		new File(dir+"processed").mkdirs();
+  		
 
         ImporterOptions options;		// new set of importer options from bio-formats
-        /*
-        //Ext.setId(id);
-        //Ext.getSeriesCount(seriesCount);
-        
-        //IMetadata omexmlMetadata = MetadataTools.createOMEXMLMetadata();
-        ImageReader reader = new ImageReader();
-        //reader.setMetadataStore(omexmlMetadata);
-        //reader.
-        
-        int seriesCount = reader.getSeriesCount();
-        
-        for (int i=0; i<seriesCount; i++) {
-        	  reader.setSeries(i);
-        	  //String name = omexmlMetadata.getImageName(i); // this is the image name stored in the file
-        	  //String label = "Series " + (i + 1) + ": " + name;  // this is the label that you see in ImageJ
-        	  // now you can read the pixel data for this series...
-        	  //IJ.log(label);
-        	}
-        
-        try {
-			//reader.setId(id);
-		} catch (FormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-        
-        
-        IJ.log(String.valueOf(seriesCount));
-        
-        try {
-			reader.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		*/
         
         try{
          options = new ImporterOptions();  
@@ -193,9 +159,10 @@ public class Domains implements PlugIn {
         ic.convertToGray8();
         ave_save.setCalibration(cal); 
         cal = ave_img.getCalibration();
-
-        String ave_file_name = dir+"processed/" +ave_save.getTitle()+".tif"; // save the files
-        SaveImage(ave_save,ave_file_name);
+        
+        //move all this to saveImage util method
+       
+        SaveImage(ave_save,"stack");
 
         if(process_domains==true){
         	ProcessProjections(ave_save);  // process the average images
@@ -210,8 +177,7 @@ public class Domains implements PlugIn {
 		imp.getProcessor().medianFilter();
 		
         // save the thresholded files       
-        String threshold_file_name = dir+"processed/" +imp.getTitle()+"-th.tif";
-        SaveImage(imp,threshold_file_name);
+        SaveImage(imp,"threshold");
 
     	// remove abberations from images caused by high laser power
     	if(abberation_correction==true) {
@@ -219,8 +185,8 @@ public class Domains implements PlugIn {
         	imp = corrected; 
     	}
  
-        String msk_file_name = dir+ "processed/" +imp.getTitle()+"-msk.tif";
-        SaveImage(imp,msk_file_name);
+        
+        SaveImage(imp,"mask");
 
 		// perform the particle analysis on the domains
         DomainAnalysis(imp);
@@ -238,9 +204,20 @@ public class Domains implements PlugIn {
     }
 
     private void DomainAnalysis(ImagePlus imp){
+    	
+    	IJ.log("Min "+ String.valueOf(min_area));
+    	IJ.log("Max "+ String.valueOf(max_area));
+    	
+    	Calibration cal = imp.getCalibration();
+    	double pixelHeight = cal.pixelHeight;
+    	double pixelWidth = cal.pixelWidth;
+    	double pixelArea = pixelHeight*pixelWidth;
+    	double min_area_pixel = min_area/pixelArea;
+    	double max_area_pixel = max_area/pixelArea;
   
         ResultsTable rt = new ResultsTable();    
-        ParticleAnalyzer pa = new ParticleAnalyzer(ParticleAnalyzer.SHOW_OUTLINES, ParticleAnalyzer.FERET+ParticleAnalyzer.AREA+ParticleAnalyzer.AREA_FRACTION+ParticleAnalyzer.SHAPE_DESCRIPTORS, rt, min_area, max_area); 
+        //we could add a column here for the experiment name
+        ParticleAnalyzer pa = new ParticleAnalyzer(ParticleAnalyzer.SHOW_OUTLINES, ParticleAnalyzer.FERET+ParticleAnalyzer.AREA+ParticleAnalyzer.AREA_FRACTION+ParticleAnalyzer.SHAPE_DESCRIPTORS, rt, min_area_pixel, max_area_pixel, min_circ, max_circ); 
  		pa.setHideOutputImage(true); 
  		boolean e = pa.analyze(imp);
  		if(e==true){
@@ -252,12 +229,12 @@ public class Domains implements PlugIn {
 		//outlines_img.show();
 
 		// save processed file
-		String out_file_name = dir+ "processed/" +imp.getTitle()+"-out";
-        SaveImage(outlines_img,out_file_name);
+        SaveImage(outlines_img,"outlines");
 
 		IJ.log("Number of Domains found " + String.valueOf(rt.getCounter()));
 
-		String analysis_file_name = dir+"processed/"+imp.getTitle()+"-dat.csv";
+		String newTitle = FileName(outlines_img,"dat");
+		String analysis_file_name = dir+"processed/"+newTitle+".csv";
         
         // this block saves the analysis file as a csv file in the directory        
         try{
@@ -268,9 +245,24 @@ public class Domains implements PlugIn {
         }    
     }
     
-    private void SaveImage(ImagePlus imp, String filename){
-  	  FileSaver fs = new FileSaver(imp);
-  	  fs.saveAsTiff(filename);
+    private void SaveImage(ImagePlus imp, String type_suffix){
+  	  
+    	 String newTitle = FileName(imp,type_suffix);		 
+         String filename = dir + "processed/" + newTitle + ".tif"; // save the files
+    	 FileSaver fs = new FileSaver(imp);
+  	     fs.saveAsTiff(filename);
+    }
+    
+    private String FileName(ImagePlus imp, String type_suffix){
+    	String title = imp.getTitle();
+        String delims = "[-]";
+        String[] tokens = title.split(delims);
+        
+        tokens[1].replaceAll("^\\s+", "");		//this is making assumptions about the filename structure
+        //String newTitle = String.join("-",tokens[1],tokens[2],type_suffix);//dump the first part
+        String newTitle = tokens[1] + "-" + tokens[2] + "-" + type_suffix;//dump the first part
+        return newTitle;
+    	
     }
 
 }
@@ -295,3 +287,45 @@ try {
 }
 catch(IOException exc){
 }*/
+
+
+/*
+//Ext.setId(id);
+//Ext.getSeriesCount(seriesCount);
+
+//IMetadata omexmlMetadata = MetadataTools.createOMEXMLMetadata();
+ImageReader reader = new ImageReader();
+//reader.setMetadataStore(omexmlMetadata);
+//reader.
+
+int seriesCount = reader.getSeriesCount();
+
+for (int i=0; i<seriesCount; i++) {
+	  reader.setSeries(i);
+	  //String name = omexmlMetadata.getImageName(i); // this is the image name stored in the file
+	  //String label = "Series " + (i + 1) + ": " + name;  // this is the label that you see in ImageJ
+	  // now you can read the pixel data for this series...
+	  //IJ.log(label);
+	}
+
+try {
+	//reader.setId(id);
+} catch (FormatException e) {
+	// TODO Auto-generated catch block
+	e.printStackTrace();
+} catch (IOException e) {
+	// TODO Auto-generated catch block
+	e.printStackTrace();
+}
+
+
+
+IJ.log(String.valueOf(seriesCount));
+
+try {
+	reader.close();
+} catch (IOException e) {
+	// TODO Auto-generated catch block
+	e.printStackTrace();
+}
+*/
