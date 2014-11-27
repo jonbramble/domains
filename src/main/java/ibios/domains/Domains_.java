@@ -13,11 +13,12 @@ public class Domains_ extends PlugInFrame {
 	public void run(String args){
 		
 		double domain_min = 0.0;
-		double domain_max = 1000.0;
+		double domain_max = 5000.0;
         GenericDialog gd = new GenericDialog("Processing Options");
         
         gd.addCheckbox("Process Domains",true);
         gd.addCheckbox("Abberation Correction",true);
+        gd.addCheckbox("Verbose",true);
         gd.addMessage("Experiment Name");
         gd.addTextAreas("",null,1,30);
         
@@ -33,6 +34,7 @@ public class Domains_ extends PlugInFrame {
 		
 		boolean process_domains = gd.getNextBoolean();
 		boolean abberation_correction = gd.getNextBoolean();
+		boolean verbose = gd.getNextBoolean();
 		String experiment = gd.getNextText();
 		domain_min = (double)gd.getNextNumber();
 		domain_max = (double)gd.getNextNumber();
@@ -40,6 +42,7 @@ public class Domains_ extends PlugInFrame {
 		Domains md = new Domains();
 		md.setAbberation_Correction(abberation_correction);
 		md.setProcess_domains(process_domains);
+		md.setVerbose(verbose);
 		md.setExperiment(experiment);
 		md.setMax_Area(domain_max);
 		md.setMin_Area(domain_min);
