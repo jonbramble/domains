@@ -69,7 +69,7 @@ public class Domains implements PlugIn {
     public String dir;      // set the default directory 
     private boolean abberation_correction = false;
     private boolean process_domains = false;
-    private boolean verbose = true; 
+    private boolean verbose = false; 
     private double max_area = 5000.0;			//set maximum for domain size in particle analysis
     private double min_area = 0.0;			//set maximum for domain size in particle analysis
     private static double min_circ = 0.01;
@@ -303,28 +303,37 @@ public class Domains implements PlugIn {
     }
     
     private void SaveImage(ImagePlus imp, String type_suffix){
-  	  
-    	 String newTitle = FileName(imp,type_suffix);		 
+  	     
+    	 String newTitle = FileName(imp,type_suffix);	
          String filename = dir + "processed/" + newTitle + ".tif"; // save the files
     	 FileSaver fs = new FileSaver(imp);
+    	 
   	     fs.saveAsTiff(filename);
     }
     
-    /*private String FileName(ImagePlus imp, String type_suffix){
-    	String title = imp.getTitle().replaceAll("\\s+","-");
+    private String FileName(ImagePlus imp, String type_suffix){
+    	
+    	String title = imp.getTitle().replaceAll("\\s+","");
+    	//IJ.log(title);
         String delims = "[_.]";
         String[] tokens = title.split(delims);
         
         //tokens[1].replaceAll("^\\s+", "");		//this is making assumptions about the filename structure
         
-        //String newTitle = tokens[1].trim() + "-" + tokens[2] + "-" + type_suffix;//dump the first part
-        String newTitle = tokens[1].trim() + "-" + type_suffix;//dump the first part
+        String newTitle = tokens[1].trim() + "-" + tokens[2] + "-" + type_suffix;//dump the first part
+        //String newTitle = tokens[1].trim() + "-" + type_suffix;//dump the first part
+        //String test = "";
+        for(int i=0; i<tokens.length; i++){
+        	IJ.log(String.valueOf(i));
+        	IJ.log(tokens[i]);
+        }
+
         return newTitle;  	
     }
     
     private String[] ExperimentName(ImagePlus imp){
     	//IJ.log(imp.getTitle());
-    	String title = imp.getTitle().replaceAll("\\s+","-");
+    	String title = imp.getTitle().replaceAll("\\s+","");
     	//IJ.log(title);
         String delims = "[_.]";
         String[] tokens = title.split(delims);
@@ -342,32 +351,8 @@ public class Domains implements PlugIn {
         	newName[1] = tokens[2];
         }
         return newName;
-    }*/
-    
-    
-    private String FileName(ImagePlus imp, String type_suffix){
-    	String title = imp.getTitle();
-        String delims = "[-]";
-        String[] tokens = title.split(delims);
-        
-        tokens[1].replaceAll("^\\s+", "");		//this is making assumptions about the filename structure
-        //String newTitle = String.join("-",tokens[1],tokens[2],type_suffix);//dump the first part
-        String newTitle = tokens[1] + "-" + tokens[2] + "-" + type_suffix;//dump the first part
-        return newTitle;  	
     }
-    
-    private String[] ExperimentName(ImagePlus imp){
-    	String title = imp.getTitle();
-        String delims = "[-]";
-        String[] tokens = title.split(delims);
-        
-        tokens[1].replaceAll("^\\s+", "");
-        
-        return new String[]{tokens[1],tokens[2]};
-    }
-
-
-
+   
 }
 
 // autothreshold methods not working here
@@ -432,3 +417,28 @@ try {
 	e.printStackTrace();
 }
 */
+
+
+/*private String FileName(ImagePlus imp, String type_suffix){
+
+String title = imp.getTitle();
+IJ.log(title);
+String delims = "[-]";
+String[] tokens = title.split(delims);
+
+tokens[1].replaceAll("^\\s+", "");		//this is making assumptions about the filename structure
+//String newTitle = String.join("-",tokens[1],tokens[2],type_suffix);//dump the first part
+String newTitle = tokens[1] + "-" + type_suffix;//dump the first part
+IJ.log(newTitle);
+return newTitle;  	
+}
+
+private String[] ExperimentName(ImagePlus imp){
+String title = imp.getTitle();
+String delims = "[-]";
+String[] tokens = title.split(delims);
+
+tokens[1].replaceAll("^\\s+", "");
+
+return new String[]{tokens[1],"A"};
+}*/

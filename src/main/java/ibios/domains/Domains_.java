@@ -17,8 +17,8 @@ public class Domains_ extends PlugInFrame {
         GenericDialog gd = new GenericDialog("Processing Options");
         
         gd.addCheckbox("Process Domains",true);
-        gd.addCheckbox("Abberation Correction",true);
-        gd.addCheckbox("Verbose",true);
+        gd.addCheckbox("Abberation Correction",false);
+        gd.addCheckbox("Verbose",false);
         gd.addMessage("Experiment Name");
         gd.addTextAreas("",null,1,30);
         
