@@ -19,7 +19,7 @@ public class Domains_ extends PlugInFrame {
         gd.addCheckbox("Process Domains",true);
         gd.addCheckbox("Abberation Correction",false);
         gd.addCheckbox("Verbose",false);
-        gd.addMessage("Experiment Name");
+        gd.addMessage("Column Headers (comma separated)");
         gd.addTextAreas("",null,1,30);
         
 		gd.addNumericField("Minimum Domain Size:",domain_min,1);

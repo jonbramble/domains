@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>ibios</groupId>
-  <artifactId>domains</artifactId>
+  <artifactId>domains_</artifactId>
   <version>0.0.1-SNAPSHOT</version>
 
   <name>domains</name>
@@ -27,13 +27,24 @@
   </repository>
 </repositories>
 
-
 <dependencies>
  <dependency>
     <groupId>net.imagej</groupId>
     <artifactId>ij</artifactId>
     <version>${imagej1.version}</version>
   </dependency>
+  
+   <dependency>
+  <groupId>loci</groupId>
+  	<artifactId>bio-formats</artifactId>
+  	<version>5.0.0-beta1</version>
+  </dependency>
+  
+  <dependency>
+  <groupId>loci</groupId>
+  <artifactId>loci_plugins</artifactId>
+  <version>5.0.0-beta1</version>
+</dependency>
   
     <dependency>
       <groupId>junit</groupId>

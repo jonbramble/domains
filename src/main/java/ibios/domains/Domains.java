@@ -75,6 +75,9 @@ public class Domains implements PlugIn {
     private static double min_circ = 0.01;
     private static double max_circ = 1.0;
     
+    private String[] colnames;
+    private int num_cols;
+    
     private String experiment = "experiment";
     private String batch;
     
@@ -116,7 +119,15 @@ public class Domains implements PlugIn {
         String img_name;
 
         new File(dir+"processed").mkdirs();
-  		
+        
+        // Process experiment name
+        // tokenize the experiment name
+        
+        experiment = experiment.replaceAll("\\s+","");
+        String delims = "[_]";
+        colnames = experiment.split(delims);
+        
+        
 
         ImporterOptions options;		// new set of importer options from bio-formats
         
