@@ -119,16 +119,11 @@ public class Domains implements PlugIn {
         String img_name;
 
         new File(dir+"processed").mkdirs();
+       
+        // processes the column names
+        colnames = ColumnNames(experiment);
+        num_cols = colnames.length;
         
-        // Process experiment name
-        // tokenize the experiment name
-        
-        experiment = experiment.replaceAll("\\s+","");
-        String delims = "[_]";
-        colnames = experiment.split(delims);
-        
-        
-
         ImporterOptions options;		// new set of importer options from bio-formats
         
         try{
@@ -164,6 +159,8 @@ public class Domains implements PlugIn {
 		}
           
     }
+    
+
 
     private void ProcessImageStack(ImagePlus imp) {
         IJ.run(imp, "Magenta Hot", "");            // these are macro versions that I could rewrite in java 
@@ -192,7 +189,7 @@ public class Domains implements PlugIn {
     private void ProcessProjections(ImagePlus img){
         // apply thresholding using macro style method
     	
-    	ImagePlus ave_img = img;  // save the old image - but it seems to be corrupted by later processors
+    	//ImagePlus ave_img = img;  // save the old image - but it seems to be corrupted by later processors
     	
         IJ.run(img, "Auto Threshold", "method=Triangle");
                 
@@ -244,7 +241,6 @@ public class Domains implements PlugIn {
     	double min_area_pixel = min_area/pixelArea;
     	double max_area_pixel = max_area/pixelArea;
     	
-  
         ResultsTable rt = new ResultsTable();    
         RoiManager manager = new RoiManager(true); //create a hidden roi manager
         
@@ -263,19 +259,20 @@ public class Domains implements PlugIn {
 
 		// save processed file
         SaveImage(outlines_img,"outlines");
-        String[] name_batch = ExperimentName(outlines_img);
-        experiment = name_batch[0];
-        batch = name_batch[1];
+        
+        //this bit should match up the names
+        String[] exp_name_variables = ExperimentName(outlines_img,num_cols);
         
         if(verbose==true){
          IJ.log("Experiment " + experiment + " " + batch);
 		 IJ.log("Number of Domains found " + String.valueOf(rt.getCounter()));
         }
         
-		int numRows = rt.getCounter();		
+		int numRows = rt.getCounter();
 		for(int k=0;k<numRows;k++){
-			rt.setValue("Experiment",k, experiment);
-			rt.setValue("Batch",k, batch);
+			for(int j=0; j<exp_name_variables.length;j++){
+				rt.setValue(colnames[j],k,exp_name_variables[j]);
+			}	
 		}
 
 		String newTitle = FileName(outlines_img,"dat");
@@ -301,7 +298,7 @@ public class Domains implements PlugIn {
             rt.saveAs(analysis_file_name);
         }
         catch(IOException exc){
-            IJ.error("Sorry, an io error occurred: " + exc.getMessage());
+            IJ.error("Sorry, an IO error occurred: " + exc.getMessage());
         }  
    
     }
@@ -322,134 +319,74 @@ public class Domains implements PlugIn {
   	     fs.saveAsTiff(filename);
     }
     
+ // Process the given list of column headings
+    private String[] ColumnNames(String experiment){
+        // split the experiment name, assumes comma separated list of column headings
+        experiment = experiment.replaceAll("\\s+","");
+        String delims = "[,]";
+        colnames = experiment.split(delims);
+        
+        //if(verbose==true){
+        IJ.log("Number of Column Names: " + String.valueOf(colnames.length));
+        	for( String col : colnames){
+        		IJ.log(col);
+        	}
+        //}//verbose
+        return colnames;
+        	
+    }
+    
     private String FileName(ImagePlus imp, String type_suffix){
     	
     	String title = imp.getTitle().replaceAll("\\s+","");
-    	//IJ.log(title);
-        String delims = "[_.]";
+        String delims = "[-]";
         String[] tokens = title.split(delims);
+        String exp_var_title = tokens[1];							//remove the part before -
         
-        //tokens[1].replaceAll("^\\s+", "");		//this is making assumptions about the filename structure
+        // Errors here!
         
-        String newTitle = tokens[1].trim() + "-" + tokens[2] + "-" + type_suffix;//dump the first part
-        //String newTitle = tokens[1].trim() + "-" + type_suffix;//dump the first part
-        //String test = "";
-        for(int i=0; i<tokens.length; i++){
-        	IJ.log(String.valueOf(i));
-        	IJ.log(tokens[i]);
+        // what do I need in the file title? 
+        
+        String newTitle = tokens[0].trim() + "-" + tokens[2] + "-" + type_suffix;	//dump the first part
+        if(verbose==true){
+        	IJ.log("FileName Method");
+        	for(String token : tokens){
+        		IJ.log(token);
+        	}
         }
 
         return newTitle;  	
     }
     
-    private String[] ExperimentName(ImagePlus imp){
-    	//IJ.log(imp.getTitle());
-    	String title = imp.getTitle().replaceAll("\\s+","");
-    	//IJ.log(title);
-        String delims = "[_.]";
-        String[] tokens = title.split(delims);
-        
-        String[] newName = new String[2];
-        
-        //tokens[1].replaceAll("^\\s+", "");    
-        if(tokens.length<4){
-        	String label = tokens[1].trim();
-        	newName[0] = label;
-        	newName[1] = label;
+    
+    // This should match up with the number of column headings
+    private String[] ExperimentName(ImagePlus imp, int num_cols){
+    	
+    	String img_title = imp.getTitle().replaceAll("\\s+","");	//remove spaces
+    	String delims = "[-]";
+    	String[] tokens = img_title.split(delims);					//delimit based on -
+    	String exp_var_title = tokens[1];							//remove the part before -
+    	
+    
+        delims = "[_]";												//delimit based on _
+        tokens = exp_var_title.split(delims);	
+       
+        for(String token : tokens){
+        	IJ.log(token);
         }
-        else{
-        	newName[0] = tokens[1].trim();
-        	newName[1] = tokens[2];
+        
+        if(tokens.length != num_cols){
+        	IJ.log("Error: The number of column names does not match the number of variables");
         }
-        return newName;
+        
+        for(String token : tokens){
+        	token.trim();
+        }
+        
+        return tokens; 
     }
+    
+
+    
    
 }
-
-// autothreshold methods not working here
-//AutoThresholder auto_t = new AutoThresholder();
-//ImageProcessor ip = imp.getProcessor();
-//int [] hist = ip.getHistogram();
- //int t = auto_t.getThreshold("Triangle",hist);
-//IJ.log(String.valueOf(t));
-//ip.setAutoThreshold("Triangle",false);  // doesn't exist
-//ip.threshold(t);
-
-//LutApplier la = new LutApplier();
-//la.setup("Magenta Hot",imp);
-//la.run();
-    
-/*java.awt.image.IndexColorModel icm;
-LutLoader lutlo = new LutLoader();
-try {
-        icm = lutlo.open("Magenta Hot");
-}
-catch(IOException exc){
-}*/
-
-
-/*
-//Ext.setId(id);
-//Ext.getSeriesCount(seriesCount);
-
-//IMetadata omexmlMetadata = MetadataTools.createOMEXMLMetadata();
-ImageReader reader = new ImageReader();
-//reader.setMetadataStore(omexmlMetadata);
-//reader.
-
-int seriesCount = reader.getSeriesCount();
-
-for (int i=0; i<seriesCount; i++) {
-	  reader.setSeries(i);
-	  //String name = omexmlMetadata.getImageName(i); // this is the image name stored in the file
-	  //String label = "Series " + (i + 1) + ": " + name;  // this is the label that you see in ImageJ
-	  // now you can read the pixel data for this series...
-	  //IJ.log(label);
-	}
-
-try {
-	//reader.setId(id);
-} catch (FormatException e) {
-	// TODO Auto-generated catch block
-	e.printStackTrace();
-} catch (IOException e) {
-	// TODO Auto-generated catch block
-	e.printStackTrace();
-}
-
-
-
-IJ.log(String.valueOf(seriesCount));
-
-try {
-	reader.close();
-} catch (IOException e) {
-	// TODO Auto-generated catch block
-	e.printStackTrace();
-}
-*/
-
-
-/*private String FileName(ImagePlus imp, String type_suffix){
-
-String title = imp.getTitle();
-IJ.log(title);
-String delims = "[-]";
-String[] tokens = title.split(delims);
-
-tokens[1].replaceAll("^\\s+", "");		//this is making assumptions about the filename structure
-//String newTitle = String.join("-",tokens[1],tokens[2],type_suffix);//dump the first part
-String newTitle = tokens[1] + "-" + type_suffix;//dump the first part
-IJ.log(newTitle);
-return newTitle;  	
-}
-
-private String[] ExperimentName(ImagePlus imp){
-String title = imp.getTitle();
-String delims = "[-]";
-String[] tokens = title.split(delims);
-
-tokens[1].replaceAll("^\\s+", "");
-
-return new String[]{tokens[1],"A"};
-}*/
