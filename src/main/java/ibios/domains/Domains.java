@@ -117,18 +117,23 @@ public class Domains implements PlugIn {
         name = od.getFileName();
         id = dir + name;
         String img_name;
+        
+        // remove the file ending for later
+        name = name.replace(".lei", "");
 
+        // create directory for processed files
         new File(dir+"processed").mkdirs();
-       
+            
         // processes the column names
         colnames = ColumnNames(experiment);
         num_cols = colnames.length;
         
+        // import the images
         ImporterOptions options;		// new set of importer options from bio-formats
         
         try{
          options = new ImporterOptions();  
-         options.setId(id);
+         options.setId(id);				// this is from dir + name from dialog box
          options.setAutoscale(true);
          options.setColorMode(ImporterOptions.COLOR_MODE_DEFAULT);
          options.setStackFormat(ImporterOptions.VIEW_STANDARD);
@@ -160,11 +165,9 @@ public class Domains implements PlugIn {
           
     }
     
-
-
     private void ProcessImageStack(ImagePlus imp) {
         IJ.run(imp, "Magenta Hot", "");            // these are macro versions that I could rewrite in java 
-                                									// if I could find out how to load up the LUTs and apply them
+                                				   // if I could find out how to load up the LUTs and apply them
         Calibration cal = imp.getCalibration();    //get calibrations from the stack image
 
         ZProjector zp = new ZProjector(imp);   // setup a zprojector and apply the average method
@@ -181,16 +184,15 @@ public class Domains implements PlugIn {
               
         SaveImage(ave_save,"stack");
 
+        // use a change of methods here to process the files - alternative schemes?
         if(process_domains==true){
         	ProcessProjections(ave_save);  // process the average images
         }
     }
 
     private void ProcessProjections(ImagePlus img){
+    	
         // apply thresholding using macro style method
-    	
-    	//ImagePlus ave_img = img;  // save the old image - but it seems to be corrupted by later processors
-    	
         IJ.run(img, "Auto Threshold", "method=Triangle");
                 
         // Run median Filter
@@ -211,8 +213,8 @@ public class Domains implements PlugIn {
 		// perform the particle analysis on the domains
         try{
         	DomainAnalysis(img);
-        }
-        catch(NullPointerException e ){
+        	}
+        	catch(NullPointerException e ){
         	e.printStackTrace();
         }
  
@@ -228,12 +230,14 @@ public class Domains implements PlugIn {
         return imp_mask;
     }
 
+    
     private void DomainAnalysis(ImagePlus imp){
     	
     	if(verbose==true){
     	  IJ.log("Min "+ String.valueOf(min_area));
     	  IJ.log("Max "+ String.valueOf(max_area));
     	}
+    	
     	Calibration cal = imp.getCalibration();
     	double pixelHeight = cal.pixelHeight;
     	double pixelWidth = cal.pixelWidth;
@@ -264,8 +268,8 @@ public class Domains implements PlugIn {
         String[] exp_name_variables = ExperimentName(outlines_img,num_cols);
         
         if(verbose==true){
-         IJ.log("Experiment " + experiment + " " + batch);
-		 IJ.log("Number of Domains found " + String.valueOf(rt.getCounter()));
+        	IJ.log("Experiment " + experiment + " " + batch);
+        	IJ.log("Number of Domains found " + String.valueOf(rt.getCounter()));
         }
         
 		int numRows = rt.getCounter();
@@ -311,7 +315,6 @@ public class Domains implements PlugIn {
     }
     
     private void SaveImage(ImagePlus imp, String type_suffix){
-  	     
     	 String newTitle = FileName(imp,type_suffix);	
          String filename = dir + "processed/" + newTitle + ".tif"; // save the files
     	 FileSaver fs = new FileSaver(imp);
@@ -319,19 +322,19 @@ public class Domains implements PlugIn {
   	     fs.saveAsTiff(filename);
     }
     
- // Process the given list of column headings
+    // Process the given list of column headings
     private String[] ColumnNames(String experiment){
         // split the experiment name, assumes comma separated list of column headings
         experiment = experiment.replaceAll("\\s+","");
         String delims = "[,]";
         colnames = experiment.split(delims);
         
-        //if(verbose==true){
-        IJ.log("Number of Column Names: " + String.valueOf(colnames.length));
-        	for( String col : colnames){
-        		IJ.log(col);
-        	}
-        //}//verbose
+        if(verbose==true){
+          IJ.log("Number of Column Names: " + String.valueOf(colnames.length));
+          for( String col : colnames){
+        	IJ.log(col);
+          }
+        }
         return colnames;
         	
     }
@@ -343,11 +346,8 @@ public class Domains implements PlugIn {
         String[] tokens = title.split(delims);
         String exp_var_title = tokens[1];							//remove the part before -
         
-        // Errors here!
-        
-        // what do I need in the file title? 
-        
-        String newTitle = tokens[0].trim() + "-" + tokens[2] + "-" + type_suffix;	//dump the first part
+        String newTitle = exp_var_title.trim() + "-" + type_suffix;	
+         
         if(verbose==true){
         	IJ.log("FileName Method");
         	for(String token : tokens){
@@ -367,7 +367,18 @@ public class Domains implements PlugIn {
     	String[] tokens = img_title.split(delims);					//delimit based on -
     	String exp_var_title = tokens[1];							//remove the part before -
     	
-    
+    	// bioformats naming DROPS everything before the first _
+    	// if 'name' has one or more underscore then replace exp_title with the second and subsequent tokens
+    	// if it a full name then requires more testing
+    	String replace_str = "";
+    	String[] file_name_tokens = name.split("[_]");
+    	for(int i=1;i<file_name_tokens.length;i++){
+    		replace_str += file_name_tokens[i] + "_";
+    		
+    	}
+    	
+    	exp_var_title = exp_var_title.replace(replace_str, "");	
+		
         delims = "[_]";												//delimit based on _
         tokens = exp_var_title.split(delims);	
        
