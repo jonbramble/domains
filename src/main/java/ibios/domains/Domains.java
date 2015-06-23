@@ -118,11 +118,11 @@ public class Domains implements PlugIn {
         id = dir + name;
         String img_name;
         
-        // remove the file ending for later
-        name = name.replace(".lei", "");
-
         // create directory for processed files
         new File(dir+"processed").mkdirs();
+        
+        // remove the file ending for later
+        name = name.replace(".lei", "");
             
         // processes the column names
         colnames = ColumnNames(experiment);
