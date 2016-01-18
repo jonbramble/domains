@@ -111,7 +111,7 @@ public class Domains implements PlugIn {
     	dir = OpenDialog.getDefaultDirectory();
     	
         OpenDialog.setDefaultDirectory(dir);
-        OpenDialog od = new OpenDialog("Open Leica .lei file ...");  // no filter options in OpenDialog
+        OpenDialog od = new OpenDialog("Open Leica file ...");  // no filter options in OpenDialog
         
         dir = od.getDirectory();
         name = od.getFileName();
@@ -122,7 +122,8 @@ public class Domains implements PlugIn {
         new File(dir+"processed").mkdirs();
         
         // remove the file ending for later
-        name = name.replace(".lei", "");
+        name = name.replace(".lif", "");
+        //name = name.replace(".lei", "");
             
         // processes the column names
         colnames = ColumnNames(experiment);
