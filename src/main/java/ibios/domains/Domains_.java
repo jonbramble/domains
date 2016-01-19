@@ -20,7 +20,7 @@ public class Domains_ extends PlugInFrame {
         gd.addCheckbox("Abberation Correction",false);
         gd.addCheckbox("Verbose",false);
         gd.addMessage("Column Headers (comma separated)");
-        gd.addTextAreas("",null,1,30);
+        gd.addTextAreas("probe,lipid,media,sample,image",null,1,30);
         
 		gd.addNumericField("Minimum Domain Size:",domain_min,1);
 		gd.addNumericField("Maximum Domain Size:",domain_max,1);

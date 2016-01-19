@@ -101,8 +101,8 @@ public class Domains implements PlugIn {
     	experiment = _experiment;
     }
     
-	public void setVerbose(boolean verbose) {
-		// TODO Auto-generated method stub
+	public void setVerbose(boolean _verbose) {
+		verbose = _verbose;
 		
 	}
     
@@ -364,25 +364,29 @@ public class Domains implements PlugIn {
     private String[] ExperimentName(ImagePlus imp, int num_cols){
     	
     	String img_title = imp.getTitle().replaceAll("\\s+","");	//remove spaces
+    	IJ.log("img title:"+img_title);
     	String delims = "[-]";
     	String[] tokens = img_title.split(delims);					//delimit based on -
     	String exp_var_title = tokens[1];							//remove the part before -
+    	IJ.log("exp_var_title:"+exp_var_title);
     	
     	// bioformats naming DROPS everything before the first _
     	// if 'name' has one or more underscore then replace exp_title with the second and subsequent tokens
     	// if it a full name then requires more testing
-    	String replace_str = "";
-    	String[] file_name_tokens = name.split("[_]");
-    	for(int i=1;i<file_name_tokens.length;i++){
-    		replace_str += file_name_tokens[i] + "_";
+    	//String replace_str = "";
+    	//String[] file_name_tokens = name.split("[_]");
+    	//for(int i=1;i<file_name_tokens.length;i++){
+    	//	replace_str += file_name_tokens[i] + "_";
     		
-    	}
+    	//}
+    	//exp_var_title = exp_var_title.replace(replace_str, "");	
     	
-    	exp_var_title = exp_var_title.replace(replace_str, "");	
+    	IJ.log("exp_var_title 2:"+exp_var_title);
 		
         delims = "[_]";												//delimit based on _
         tokens = exp_var_title.split(delims);	
        
+        IJ.log("tokens:");
         for(String token : tokens){
         	IJ.log(token);
         }
